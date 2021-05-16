@@ -1,0 +1,171 @@
+package webutil
+
+import (
+	"fmt"
+	"io/ioutil"
+	"mime"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/kambahr/go-webcache"
+)
+
+// NewHTTP creates a new instance of webutil.
+func NewHTTP(rootPhysicalPath string, cacheDuration time.Duration) *HTTP {
+	var h HTTP
+	h.RootPhysicalPath = rootPhysicalPath
+	h.CacheDuration = cacheDuration
+	h.Webcache = webcache.NewWebCache(rootPhysicalPath, cacheDuration)
+	return &h
+}
+
+// setContentTypeAndWrite writes reponse and reutrns false, if mime type not found;
+// returns true if mime type found.
+// The returns are for info -- as in any case the mime type is written:
+//    1. Mime type not found, let the browser handle it.
+//    2. Mime type found but not chaced, write from the file.
+//    3. Mime type found and cached, write from the cache.
+func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (bool, bool, bool) {
+
+	mimTypeFound := false
+	servedFromCache := false
+	servedFromFile := false
+	uriPath := strings.ToLower(r.URL.Path)
+	ext := getFileExtension(uriPath)
+
+	cntType := mime.TypeByExtension(ext)
+	if cntType != "" && !strings.Contains(cachetypes, ext) {
+		// Let the browser/server handle the ones not on the list of cachetypes.
+		w.Header().Set("Content-Type", cntType)
+		return true, servedFromCache, servedFromFile
+	}
+
+	// All else fall into the cache category.
+	cntType = h.GetMIMEContentType(ext)
+	if cntType != "" {
+		mimTypeFound = true
+	}
+	w.Header().Set("Content-Type", cntType)
+	var b []byte
+	physPath := fmt.Sprintf("%s%s", h.RootPhysicalPath, uriPath)
+	bFromCache := h.Webcache.GetItem(uriPath)
+	if len(bFromCache) == 0 {
+		b, _ = ioutil.ReadFile(physPath)
+		h.Webcache.AddItem(uriPath, b, h.CacheDuration)
+		w.Write(b)
+		servedFromFile = true
+	} else {
+		w.Write(bFromCache)
+		servedFromCache = true
+	}
+
+	return mimTypeFound, servedFromCache, servedFromFile
+}
+
+// GetMIMEContentType first checks the standard extensions i.e. .png, .js,...
+// if not found it uses a custom parsing to return the right content type.
+func (h *HTTP) GetMIMEContentType(ext string) string {
+
+	ctype := mime.TypeByExtension(ext)
+
+	if ctype != "" {
+		// Found by Go's mime package'.
+		return ctype
+	}
+
+	if ext == ".min.css" || ext == ".min.css.map" {
+		return "text/css; charset=utf-8"
+
+	} else if ext == ".js.map" || ext == ".min.js" {
+		return "application/javascript"
+
+	} else if ext == ".min.js.map" {
+		// application/octet-stream works best for this, although
+		// you could also use application/javasript, some browsers
+		// return an error, with application/javasript.
+		return "application/octet-stream"
+	}
+
+	return ctype
+}
+
+// ServeStaticFile processes static files for a website. Static files
+// are the ones that require no additional rending before their content
+// is written to a ResponseWrite object, hence no custom error handling, if file is not found.
+// The MIME is written to the Response Header according to the extension of the
+// requested file. Examples are: .js, .css, .html.
+func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
+
+	uriPath := strings.ToLower(r.URL.Path)
+
+	// Note about Security:
+	// If you need to apply security for your static files (i.e restrict access to some .js or image files),
+	// add your rules here to catch matches by path, ip addr, header, http method, etc.
+	// For example, you may choose a certina range of IP addresses not to be able to use a
+	// certain js file...You could warn the user in your API or website and then
+	// make certain that your page does not leave your server.
+	// The following is a crude sample:
+	// blockedList := []string{"###.29.29.3", "###.29.29.4", "###.29.29.5"}
+	// ip := parseIPAddress(r)
+	// for i := 0; i < len(blockedList); i++ {
+	// 	if ip == blockedList[i] {
+	// 		w.WriteHeader(http.StatusUnauthorized)
+	// 		w.Write([]byte(http.StatusText(http.StatusUnauthorized)))
+	// 		return
+	// 	}
+	// }
+
+	ext := getFileExtension(uriPath)
+
+	if !strings.Contains(cachetypes, ext) {
+		// This is web page like .html .pl,... that is cached by this method.
+		rPath := strings.ToLower(r.URL.Path)
+		physPath := fmt.Sprintf("%s%s", h.RootPhysicalPath, rPath)
+		http.ServeFile(w, r, physPath)
+		return
+	}
+
+	h.setContentTypeAndWrite(w, r)
+}
+
+// AddSuffix adds file extension (i.e. .html) to the path if not present.
+// It will check for /null in the path (maybe passed by javascript in error).
+// It also adds index.html to the path, if the path is a directory.
+func (h *HTTP) AddSuffix(rPath string, fileExtension string) string {
+
+	fileExtension = strings.ToLower(fileExtension)
+	rPath = strings.ToLower(rPath)
+
+	if rPath == "/null" {
+		return "/"
+	}
+
+	if strings.HasSuffix(rPath, fileExtension) {
+		return rPath
+	}
+
+	physPath := fmt.Sprintf("%s%s%s", h.RootPhysicalPath, rPath, fileExtension)
+	if fileOrDirectoryExists(physPath) {
+		rPath = fmt.Sprintf("%s%s", rPath, fileExtension)
+		return rPath
+	}
+
+	// If a directory - add index.html
+	newRpath := fmt.Sprintf("%s/index%s", rPath, fileExtension)
+	physPath = fmt.Sprintf("%s%s", h.RootPhysicalPath, newRpath)
+	if fileOrDirectoryExists(physPath) {
+		return newRpath
+	}
+
+	// TODO:
+	// Add your customized handler here. For example you may want
+	// to see if your path is a few directires deep... i.e.
+	// http://mywebsite/mydir1/mydir2/mysubjectdir and then add the
+	// /index.html to the above path.
+	// You could also choose to accept URL paths with or without the
+	// .html in the URL.
+
+	// as-is
+	return rPath
+}
