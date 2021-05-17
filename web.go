@@ -70,7 +70,7 @@ func (h *HTTP) GetMIMEContentType(ext string) string {
 	ctype := mime.TypeByExtension(ext)
 
 	if ctype != "" {
-		// Found by Go's mime package'.
+		// Found by Go utility.
 		return ctype
 	}
 
@@ -81,9 +81,10 @@ func (h *HTTP) GetMIMEContentType(ext string) string {
 		return "application/javascript"
 
 	} else if ext == ".min.js.map" {
-		// application/octet-stream works best for this, although
-		// you could also use application/javasript, some browsers
-		// return an error, with application/javasript.
+		// application/octet-stream works best for this, althouth
+		// Yyou could return application/javasript so that the content would be
+		// viewable in a browser, however, while visible as text it will not
+		// with some browsers (you'll get an error in the console).
 		return "application/octet-stream"
 	}
 
@@ -97,15 +98,17 @@ func (h *HTTP) GetMIMEContentType(ext string) string {
 // requested file. Examples are: .js, .css, .html.
 func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
 
-	uriPath := strings.ToLower(r.URL.Path)
+	uriPath := r.URL.Path
+
+	fmt.Println(uriPath)
 
 	// Note about Security:
 	// If you need to apply security for your static files (i.e restrict access to some .js or image files),
 	// add your rules here to catch matches by path, ip addr, header, http method, etc.
 	// For example, you may choose a certina range of IP addresses not to be able to use a
-	// certain js file...You could warn the user in your API or website and then
+	// certian js file...You could warn the user in your API or website and then
 	// make certain that your page does not leave your server.
-	// The following is a crude sample:
+	// The followig is a crude sample:
 	// blockedList := []string{"###.29.29.3", "###.29.29.4", "###.29.29.5"}
 	// ip := parseIPAddress(r)
 	// for i := 0; i < len(blockedList); i++ {
@@ -120,8 +123,9 @@ func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
 
 	if !strings.Contains(cachetypes, ext) {
 		// This is web page like .html .pl,... that is cached by this method.
-		rPath := strings.ToLower(r.URL.Path)
+		rPath := r.URL.Path
 		physPath := fmt.Sprintf("%s%s", h.RootPhysicalPath, rPath)
+
 		http.ServeFile(w, r, physPath)
 		return
 	}
@@ -164,7 +168,7 @@ func (h *HTTP) AddSuffix(rPath string, fileExtension string) string {
 	// http://mywebsite/mydir1/mydir2/mysubjectdir and then add the
 	// /index.html to the above path.
 	// You could also choose to accept URL paths with or without the
-	// .html in the URL.
+	// .html.
 
 	// as-is
 	return rPath
