@@ -81,8 +81,8 @@ func (h *HTTP) GetMIMEContentType(ext string) string {
 		return "application/javascript"
 
 	} else if ext == ".min.js.map" {
-		// application/octet-stream works best for this, althouth
-		// Yyou could return application/javasript so that the content would be
+		// application/octet-stream works best for this, although
+		// You could return application/javascript so that the content would be
 		// viewable in a browser, however, while visible as text it will not
 		// with some browsers (you'll get an error in the console).
 		return "application/octet-stream"
@@ -99,8 +99,6 @@ func (h *HTTP) GetMIMEContentType(ext string) string {
 func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
 
 	uriPath := r.URL.Path
-
-	fmt.Println(uriPath)
 
 	// Note about Security:
 	// If you need to apply security for your static files (i.e restrict access to some .js or image files),
