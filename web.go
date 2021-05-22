@@ -16,7 +16,7 @@ func NewHTTP(rootPhysicalPath string, cacheDuration time.Duration) *HTTP {
 	var h HTTP
 	h.RootPhysicalPath = rootPhysicalPath
 	h.CacheDuration = cacheDuration
-	h.Webcache = webcache.NewWebCache(rootPhysicalPath, cacheDuration)
+	h.Webcache = webcache.NewWebCache(cacheDuration)
 	return &h
 }
 
