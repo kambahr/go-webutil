@@ -1,6 +1,6 @@
 # Web Utility for Golang websites.
 
-## Webutil is a simple, lightweight utility for your Golang website.
+## Webutil is a simple, lightweight utility for Golang websites.
 
 It loads, selects the right mime, and caches static (js, css, image,...), and html files.
 It also has a place-holder to apply security in order to withhold a file (i.e. a javascript file).
