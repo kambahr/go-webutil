@@ -48,13 +48,19 @@ func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (b
 	}
 	w.Header().Set("Content-Type", cntType)
 	var b []byte
+	var err error
 	physPath := fmt.Sprintf("%s%s", h.RootPhysicalPath, uriPath)
 	bFromCache := h.Webcache.GetItem(uriPath)
 	if len(bFromCache) == 0 {
-		b, _ = ioutil.ReadFile(physPath)
-		h.Webcache.AddItem(uriPath, b, h.CacheDuration)
-		w.Write(b)
-		servedFromFile = true
+		b, err = ioutil.ReadFile(physPath)
+		if err != nil {
+			// TO DO: log this or notify the caller.
+			fmt.Println(err)
+		} else {
+			h.Webcache.AddItem(uriPath, b, h.CacheDuration)
+			w.Write(b)
+			servedFromFile = true
+		}
 	} else {
 		w.Write(bFromCache)
 		servedFromCache = true
@@ -83,8 +89,8 @@ func (h *HTTP) GetMIMEContentType(ext string) string {
 	} else if ext == ".min.js.map" {
 		// application/octet-stream works best for this, although
 		// You could return application/javascript so that the content would be
-		// viewable in a browser, however, while visible as text it will not
-		// with some browsers (you'll get an error in the console).
+		// viewable in a browser, however, while visible as text it may still
+		// not work with some browsers (you may get an error in the console).
 		return "application/octet-stream"
 	}
 
@@ -103,10 +109,10 @@ func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
 	// Note about Security:
 	// If you need to apply security for your static files (i.e restrict access to some .js or image files),
 	// add your rules here to catch matches by path, ip addr, header, http method, etc.
-	// For example, you may choose a certina range of IP addresses not to be able to use a
+	// For example, you may choose a range of IP addresses not to be able to use a
 	// certian js file...You could warn the user in your API or website and then
 	// make certain that your page does not leave your server.
-	// The followig is a crude sample:
+	// The following is a crude example:
 	// blockedList := []string{"###.29.29.3", "###.29.29.4", "###.29.29.5"}
 	// ip := parseIPAddress(r)
 	// for i := 0; i < len(blockedList); i++ {
