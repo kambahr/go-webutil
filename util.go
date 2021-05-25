@@ -78,6 +78,9 @@ func getFileExtension(p string) string {
 // RemoveCommentsFromByBiteArry removes a block of text from a byte array.
 func (h *HTTP) RemoveCommentsFromByBiteArry(b []byte, begin string, end string) []byte {
 
+	begin = strings.Trim(begin, " ")
+	end = strings.Trim(end, " ")
+
 	// Avoid recursion by using a label to go through
 	// many iterations until all target blocks of text are removed.
 lblAgain:
@@ -115,8 +118,11 @@ lblAgain:
 	return b
 }
 
-//RemoveCommentsFromFromString removes a block of text from inside an string.
-func (h *HTTP) RemoveCommentsFromFromString(s string, begin string, end string) string {
+//RemoveCommentsFromString removes a block of text from inside an string.
+func (h *HTTP) RemoveCommentsFromString(s string, begin string, end string) string {
+
+	begin = strings.Trim(begin, " ")
+	end = strings.Trim(end, " ")
 
 	// Avoid recursion by using a label to go through
 	// many iterations until all target blocks of text are removed.
@@ -129,6 +135,7 @@ lblAgain:
 	}
 
 	left := s[:i-1]
+
 	right := s[len(left):]
 
 	j := strings.Index(right, end)
