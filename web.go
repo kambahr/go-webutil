@@ -31,7 +31,7 @@ func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (b
 	mimTypeFound := false
 	servedFromCache := false
 	servedFromFile := false
-	uriPath := strings.ToLower(r.URL.Path)
+	uriPath := r.URL.Path
 	ext := getFileExtension(uriPath)
 
 	cntType := mime.TypeByExtension(ext)
@@ -141,8 +141,6 @@ func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
 // It will check for /null in the path (maybe passed by javascript in error).
 // It also adds index.html to the path, if the path is a directory.
 func (h *HTTP) AddSuffix(rPath string, fileExtension string) string {
-
-	fileExtension = strings.ToLower(fileExtension)
 
 	if rPath == "/null" {
 		return "/"
