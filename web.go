@@ -143,7 +143,6 @@ func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
 func (h *HTTP) AddSuffix(rPath string, fileExtension string) string {
 
 	fileExtension = strings.ToLower(fileExtension)
-	rPath = strings.ToLower(rPath)
 
 	if rPath == "/null" {
 		return "/"
