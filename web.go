@@ -20,7 +20,7 @@ func NewHTTP(rootPhysicalPath string, cacheDuration time.Duration) *HTTP {
 	return &h
 }
 
-// setContentTypeAndWrite writes reponse and reutrns false, if mime type not found;
+// setContentTypeAndWrite writes the response and reutrns false, if mime type not found;
 // returns true if mime type found.
 // The returns are for info -- as in any case the mime type is written:
 //    1. Mime type not found, let the browser handle it.
@@ -67,6 +67,32 @@ func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (b
 	}
 
 	return mimTypeFound, servedFromCache, servedFromFile
+}
+
+// SetContentTypeAndWrite writes the response and reutrns false, if mime type not found;
+// returns true if mime type found. It uses the conent passed via an arg rather than
+// than that of the request.
+func (h *HTTP) SetContentTypeAndWrite(w http.ResponseWriter, r *http.Request, f []byte) bool {
+	mimTypeFound := false
+	uriPath := strings.ToLower(r.URL.Path)
+	ext := getFileExtension(uriPath)
+
+	cntType := mime.TypeByExtension(ext)
+	if cntType != "" && !strings.Contains(cachetypes, ext) {
+		// Let the browser/server handle the ones not on the list of cachetypes.
+		w.Header().Set("Content-Type", cntType)
+		return true
+	}
+
+	// All else fall into the cache category.
+	cntType = h.GetMIMEContentType(ext)
+	if cntType != "" {
+		mimTypeFound = true
+	}
+	w.Header().Set("Content-Type", cntType)
+	w.Write(f)
+
+	return mimTypeFound
 }
 
 // GetMIMEContentType first checks the standard extensions i.e. .png, .js,...
