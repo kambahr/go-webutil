@@ -1,6 +1,8 @@
 package webutil
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"mime"
@@ -58,15 +60,46 @@ func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (b
 			fmt.Println(err)
 		} else {
 			h.Webcache.AddItem(uriPath, b, h.CacheDuration)
-			w.Write(b)
+			writeResponse(ext,              b, w, r)
 			servedFromFile = true
 		}
 	} else {
-		w.Write(bFromCache)
+		writeResponse(ext,bFromCache, w, r)
 		servedFromCache = true
 	}
 
 	return mimTypeFound, servedFromCache, servedFromFile
+}
+
+// writeResponse write the response. if gzip in present in the
+// header, it will compress the respone before writing.
+func writeResponse(ext string, d []byte, w http.ResponseWriter, r *http.Request) {
+
+	if r.Method != "HEAD" {
+		// TODO: More compress type; also parese the order and weight,
+		compressResponse := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+
+		const nocomp string = ".jpeg .jpg"
+
+		if strings.Contains(nocomp,ext) {
+			compressResponse = false
+		}
+
+		if compressResponse {
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Set("Accept-Ranges", "bytes")
+		}
+
+		if compressResponse {
+			var b bytes.Buffer
+			gw, _ := gzip.NewWriterLevel(&b, gzip.DefaultCompression)
+			gw.Write(d)
+			gw.Close()
+			w.Write(b.Bytes())
+		} else {
+			w.Write(d)
+		}
+	}
 }
 
 // SetContentTypeAndWrite writes the response and reutrns false, if mime type not found;
@@ -109,10 +142,11 @@ func (h *HTTP) GetMIMEContentType(ext string) string {
 	if ext == ".min.css" || ext == ".min.css.map" {
 		return "text/css; charset=utf-8"
 
-	} else if ext == ".js.map" || ext == ".min.js" {
+	} else if ext == ".min.js" {
 		return "application/javascript"
 
-	} else if ext == ".min.js.map" {
+	} else if ext == ".min.js.map" || ext == ".js.map" {
+
 		// application/octet-stream works best for this, although
 		// You could return application/javascript so that the content would be
 		// viewable in a browser, however, while visible as text it may still
