@@ -1,6 +1,8 @@
 package webutil
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"mime"
@@ -54,15 +56,15 @@ func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (b
 	if len(bFromCache) == 0 {
 		b, err = ioutil.ReadFile(physPath)
 		if err != nil {
-			// TO DO: log this or notify the caller.
+			// TO DO: log this or notify the caller. 
 			fmt.Println(err)
 		} else {
 			h.Webcache.AddItem(uriPath, b, h.CacheDuration)
-			w.Write(b)
+			writeResponse(b, w , r)
 			servedFromFile = true
 		}
 	} else {
-		w.Write(bFromCache)
+		writeResponse(bFromCache, w , r)
 		servedFromCache = true
 	}
 
@@ -90,9 +92,38 @@ func (h *HTTP) SetContentTypeAndWrite(w http.ResponseWriter, r *http.Request, f 
 		mimTypeFound = true
 	}
 	w.Header().Set("Content-Type", cntType)
-	w.Write(f)
+	writeResponse(f, w , r)
 
 	return mimTypeFound
+}
+
+// writeResponse compresses the response if the client asks for it.
+// TODO: add more types of compressions.
+func writeResponse(content []byte, w http.ResponseWriter, r *http.Request) {
+
+	if r.Method == "HEAD" {
+		return
+	}
+
+	compressResponse := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+
+	if compressResponse {
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("Transfer-Encoding", "gzip, chunked")
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	if compressResponse {
+		var b bytes.Buffer
+		gw, _ := gzip.NewWriterLevel(&b, gzip.DefaultCompression)
+		gw.Write(content)
+		gw.Close()
+		w.Write(b.Bytes())
+	} else {
+		w.Write(content)
+	}
 }
 
 // GetMIMEContentType first checks the standard extensions i.e. .png, .js,...
