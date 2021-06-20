@@ -18,10 +18,11 @@ var mWebutil *webutil.HTTP
 var mInstallPath string
 
 // This is a simple website to show the usage of the webuti package.
-
 func main() {
 
 	var portNo int = 8005
+
+	httpWrapperDemo()
 
 	// This is the default root directory, where your main is
 	// executed from; but it could be any path on your system -- that
@@ -44,6 +45,7 @@ func main() {
 	}
 
 	fmt.Printf("Listening to port %d\n", portNo)
+	fmt.Println("open http://localhost:8005 in a browser to view the static page.")
 
 	log.Fatal(svr.ListenAndServe())
 }
@@ -84,6 +86,34 @@ func handleMyPage(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
+// httpWrapperDemo shows usage of the webutil.HTTPExec() in web.go.
+func httpWrapperDemo() {
+	urlx := "https://go-webcache.githubsamples.com"
+	fmt.Println(strings.Repeat("*", 80))
+	fmt.Println("Demo: using the webutil.HTTPExec() wrapper")
+	fmt.Println(strings.Repeat("-", 43))
+	fmt.Println("calling", urlx, "...")
+	var myHeader http.Header
+	myHeader = make(http.Header, 1)
+	myHeader.Set("User-Agent", "Go client;usage demo for webutil.HTTPExec() - https://github.com/kambahr/go-webutil; ")
+	myHeader.Set("X-MyHeader", "my header value")
+	myData := []byte(`{"mode": "test"}`)
+	timeoutMillisecond := uint(600)
+	st := time.Now()
+	data, resp, errx := webutil.HTTPExec(webutil.GET, urlx, myHeader, myData, timeoutMillisecond)
+	elsapsed := time.Since(st)
+	if errx != nil {
+		log.Fatal(errx)
+	}
+	fmt.Println("  ", resp.Status)
+	rs := string(data)
+	rs = strings.ReplaceAll(rs, "\n", "")
+	rs = strings.ReplaceAll(rs, "  ", "")
+	fmt.Println("  ", rs[:70], "...")
+	fmt.Println("elsaped time:", elsapsed)
+	fmt.Println(strings.Repeat("*", 80))
+	fmt.Print()
+}
 func fileExists(path string) bool {
 	if path == "" {
 		return false
