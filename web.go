@@ -60,18 +60,18 @@ func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (b
 			fmt.Println(err)
 		} else {
 			h.Webcache.AddItem(uriPath, b, h.CacheDuration)
-			writeResponse(ext,              b, w, r)
+			writeResponse(ext, b, w, r)
 			servedFromFile = true
 		}
 	} else {
-		writeResponse(ext,bFromCache, w, r)
+		writeResponse(ext, bFromCache, w, r)
 		servedFromCache = true
 	}
 
 	return mimTypeFound, servedFromCache, servedFromFile
 }
 
-// writeResponse write the response. if gzip in present in the
+// writeResponse writes the response. if gzip in present in the
 // header, it will compress the respone before writing.
 func writeResponse(ext string, d []byte, w http.ResponseWriter, r *http.Request) {
 
@@ -81,7 +81,7 @@ func writeResponse(ext string, d []byte, w http.ResponseWriter, r *http.Request)
 
 		const nocomp string = ".jpeg .jpg"
 
-		if strings.Contains(nocomp,ext) {
+		if strings.Contains(nocomp, ext) {
 			compressResponse = false
 		}
 
@@ -98,6 +98,37 @@ func writeResponse(ext string, d []byte, w http.ResponseWriter, r *http.Request)
 			w.Write(b.Bytes())
 		} else {
 			w.Write(d)
+		}
+	}
+}
+
+// WriteResponse writes the response. if gzip in present in the
+// header, it will compress the respone before writing.
+func WriteResponse(data []byte, w http.ResponseWriter, r *http.Request) {
+
+	rPath := strings.ToLower(r.URL.Path)
+
+	if r.Method != "HEAD" {
+		// TODO: More compress type; also parese the order and weight,
+		compressResponse := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+
+		if strings.HasSuffix(rPath, ".jpeg") || strings.HasSuffix(rPath, ".jpg") {
+			compressResponse = false
+		}
+
+		if compressResponse {
+			w.Header().Set("Content-Encoding", "gzip")
+			w.Header().Set("Accept-Ranges", "bytes")
+		}
+
+		if compressResponse {
+			var b bytes.Buffer
+			gw, _ := gzip.NewWriterLevel(&b, gzip.DefaultCompression)
+			gw.Write(data)
+			gw.Close()
+			w.Write(b.Bytes())
+		} else {
+			w.Write(data)
 		}
 	}
 }
@@ -233,4 +264,47 @@ func (h *HTTP) AddSuffix(rPath string, fileExtension string) string {
 
 	// as-is
 	return rPath
+}
+
+// HTTPExec send http request to a server. It returns data, response, and error (if any).
+// Although the entire reponse is returned, the data is also read into a []byte for a
+// quick lookup by the caller.
+func HTTPExec(method HTTPMethod, urlx string, hd http.Header, data []byte, timeoutMilliseconds uint) ([]byte, *http.Response, error) {
+
+	var r *http.Response
+
+	// a zero timeout value will mean that the default timeout will be used.
+	timeout := time.Duration(timeoutMilliseconds) * time.Millisecond
+
+	// create the client.
+	client := http.Client{Timeout: timeout}
+	// create the resquest with data (still ok if there is no data).
+	dReader := bytes.NewReader(data)
+	req, err := http.NewRequest(fmt.Sprintf("%s", method), urlx, dReader)
+	if err != nil {
+		return nil, r, err
+	}
+
+	// add the headers - if any.
+	if hd != nil {
+		req.Header = hd
+	}
+
+	// make the call.
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, r, err
+	}
+	defer resp.Body.Close()
+
+	// read the response body to return.
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, r, err
+	}
+
+	// copy the response.
+	r = resp
+
+	return respBody, r, nil
 }

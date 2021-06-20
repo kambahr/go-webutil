@@ -30,3 +30,18 @@ type UserSession struct {
 	LastVerificationCodeRequest  time.Time
 	VerificationCodeRequestCount int
 }
+
+//go:generate stringer -type=HTTPMethod
+type HTTPMethod int
+
+const (
+	GET HTTPMethod = iota
+	HEAD
+	POST
+	PUT
+	CONNECT
+	DELETE
+	OPTIONS
+	PATCH
+	TRACE
+)
