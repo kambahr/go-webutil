@@ -4,6 +4,7 @@
 package webutil
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/kambahr/go-webcache"
@@ -29,6 +30,13 @@ type UserSession struct {
 	VerificationCodeExpires      time.Time
 	LastVerificationCodeRequest  time.Time
 	VerificationCodeRequestCount int
+}
+
+type HTTPResult struct {
+	ResponseData []byte
+	RequestDump  string
+	Response     *http.Response
+	Request      *http.Request
 }
 
 //go:generate stringer -type=HTTPMethod

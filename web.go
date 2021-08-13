@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 	"time"
 
@@ -267,22 +268,23 @@ func (h *HTTP) AddSuffix(rPath string, fileExtension string) string {
 }
 
 // HTTPExec send http request to a server. It returns data, response, and error (if any).
-// Although the entire reponse is returned, the data is also read into a []byte for a
+// Although the entire reponse, and request are returned, the data is also read into a []byte for a
 // quick lookup by the caller.
-func HTTPExec(method HTTPMethod, urlx string, hd http.Header, data []byte, timeoutMilliseconds uint) ([]byte, *http.Response, error) {
+func HTTPExec(method HTTPMethod, urlx string, hd http.Header, data []byte, tMillisec uint, logRequest bool) (HTTPResult, error) {
 
-	var r *http.Response
+	var result HTTPResult
 
 	// a zero timeout value will mean that the default timeout will be used.
-	timeout := time.Duration(timeoutMilliseconds) * time.Millisecond
+	timeout := time.Duration(tMillisec) * time.Millisecond
 
 	// create the client.
 	client := http.Client{Timeout: timeout}
 	// create the resquest with data (still ok if there is no data).
 	dReader := bytes.NewReader(data)
 	req, err := http.NewRequest(fmt.Sprintf("%s", method), urlx, dReader)
+	result.Request = req
 	if err != nil {
-		return nil, r, err
+		return result, err
 	}
 
 	// add the headers - if any.
@@ -290,21 +292,30 @@ func HTTPExec(method HTTPMethod, urlx string, hd http.Header, data []byte, timeo
 		req.Header = hd
 	}
 
+	if logRequest {
+		// This adds appx 92.448µs to the process.
+		b, err := httputil.DumpRequest(req, false)
+		if err == nil {
+			result.RequestDump = string(b)
+		}
+	}
+
 	// make the call.
 	resp, err := client.Do(req)
+	result.Response = resp
 	if err != nil {
-		return nil, r, err
+		return result, err
 	}
 	defer resp.Body.Close()
 
 	// read the response body to return.
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, r, err
+		return result, err
 	}
 
-	// copy the response.
-	r = resp
+	result.Response = resp
+	result.ResponseData = respBody
 
-	return respBody, r, nil
+	return result, nil
 }
