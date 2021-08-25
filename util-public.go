@@ -32,7 +32,13 @@ lblAgain:
 		return b
 	}
 
-	left := b[:i-1]
+	var left []byte 
+	if i > 0 {
+		left = b[:i-1]
+	} else {
+		left = b[:i]
+	}
+
 	right := b[len(left):]
 
 	j := bytes.Index(right, []byte(end))
@@ -75,7 +81,12 @@ lblAgain:
 		return s
 	}
 
-	left := s[:i-1]
+	left := ""
+	if i > 0 {
+		left = s[:i-1]
+	} else {
+		left = s[:i]
+	}
 
 	right := s[len(left):]
 
