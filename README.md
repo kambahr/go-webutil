@@ -37,6 +37,18 @@ All needed is assigning the path to the http handler as the following example:
 mWebutil := webutil.NewHTTP(mInstallPath, 5*time.Minute)
 http.HandleFunc("/assets/", mWebutil.ServeStaticFile)
 ````
+#### Process Page Directives
+Insert page directives inside html pages. 
+```go
+func (h *HTTP) ProcessPageCommands(b []byte) ([]byte, error)
+````
+Use the **LoadFile** directive to insert content inside a block; easily reuse pieces of code inside pages without writing separate code.
+Usage Example:
+```
+<div style="border:none">
+  {{.$LoadFile:/web/html/my-cool-grid.html}}
+</div>
+```
 
 ### Comments
 You can leave comments in any file (.html, .js, .go,..), knowing that they will not reach the client.
