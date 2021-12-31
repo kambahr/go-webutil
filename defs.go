@@ -10,6 +10,10 @@ import (
 	"github.com/kambahr/go-webcache"
 )
 
+const (
+	PageCmdLoadFile = "$LoadFile"
+)
+
 const cachetypes = ".js .css .min.css .min.css.map .js.map .min.js .min.js.map .csv .xls .xlsx .ods"
 
 // HTTP are common http callback functions.
