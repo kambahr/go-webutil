@@ -34,17 +34,12 @@ lblAgain:
 		return b
 	}
 
-	var left []byte
-	if i > 0 {
-		left = b[:i-1]
-	} else {
-		left = b[:i]
-	}
+	left := b[:i]
 
 	right := b[len(left):]
 
 	j := bytes.Index(right, []byte(end))
-	right = right[j+2:]
+	right = right[j+len(end):]
 
 	b = make([]byte, len(left)+len(right))
 
@@ -83,17 +78,12 @@ lblAgain:
 		return s
 	}
 
-	left := ""
-	if i > 0 {
-		left = s[:i-1]
-	} else {
-		left = s[:i]
-	}
+	left := s[:i]
 
 	right := s[len(left):]
 
 	j := strings.Index(right, end)
-	right = right[j+2:]
+	right = right[j+len(end):]
 
 	s = fmt.Sprintf("%s%s", left, right)
 

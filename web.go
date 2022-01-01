@@ -306,7 +306,9 @@ func HTTPExec(method HTTPMethod, urlx string, hd http.Header, data []byte, tMill
 	if err != nil {
 		return result, err
 	}
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 
 	// read the response body to return.
 	respBody, err := ioutil.ReadAll(resp.Body)
