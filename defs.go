@@ -34,6 +34,7 @@ type UserSession struct {
 	VerificationCodeExpires      time.Time
 	LastVerificationCodeRequest  time.Time
 	VerificationCodeRequestCount int
+	ReferredURL                  string
 }
 
 type HTTPResult struct {
