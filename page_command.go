@@ -18,34 +18,9 @@ func (h *HTTP) parseJsonIntoSingleLine(bx []byte) []byte {
 	json.Unmarshal(bx, &m)
 
 	b, _ := json.Marshal(m)
-	//b = bytes.ReplaceAll(b, []byte(`\"`), []byte(`"`))
 	xs := string(b)
 
 	return b
-
-	// var emptyByte []byte
-	// bx = bytes.TrimSpace(bytes.ReplaceAll(bx, []byte("\n"), emptyByte))
-	// bx = bytes.TrimSpace(bytes.ReplaceAll(bx, []byte("\t"), emptyByte))
-	// bx = bytes.TrimSpace(bytes.ReplaceAll(bx, []byte("\r"), emptyByte))
-	// bx = bytes.ReplaceAll(bx, []byte(`\"`), []byte(`"`))
-
-	// tx := [][2]string{
-	// 	{",", `"`},
-	// 	{"[", "{"},
-	// 	{"{", `"`},
-	// }
-
-	// for i := 0; i < len(tx); i++ {
-	// 	r := regexp.MustCompile(fmt.Sprintf(`\%s(.*?)\%s`, tx[i][0], tx[i][1]))
-	// 	m := r.FindAllString(string(bx), -1)
-	// 	sx := fmt.Sprintf("%s%s", tx[i][0], tx[i][1])
-	// 	for i := 0; i < len(m); i++ {
-	// 		mTrimed := strings.ReplaceAll(string(bx), m[i], sx)
-	// 		bx = []byte(mTrimed)
-	// 	}
-	// }
-
-	// return bx
 }
 
 // parsePageCommand processes command directives inside a page.
