@@ -65,6 +65,16 @@ func (h *HTTP) parsePageCommand(b []byte, cmd string) ([]byte, []error) {
 				continue
 			}
 
+			// try to decrypt the file
+			if h.DecryptFile != nil {
+				h.DecryptFile(pysPath, h.EncryptionKeyPhrase)
+				bx, err = ReadFile(pysPath)
+				if err != nil {
+					errArry = append(errArry, err)
+					continue
+				}
+			}
+
 			bx = h.parseJsonIntoSingleLine(bx)
 			phrase := fmt.Sprintf("%s:%s%s", string(leftSearchLeafe), relPath, delm)
 			phraseByte := []byte(phrase)

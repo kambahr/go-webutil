@@ -21,6 +21,9 @@ type HTTP struct {
 	RootPhysicalPath string
 	CacheDuration    time.Duration
 	Webcache         *webcache.Cache
+
+	DecryptFile         func(filePath string, keyPhrase string)
+	EncryptionKeyPhrase string
 }
 
 // UserSession defines a web user session.
