@@ -14,12 +14,13 @@ import (
 // parseJsonIntoSingleLine trimes json string into a single line.
 func (h *HTTP) parseJsonIntoSingleLine(bx []byte) []byte {
 
+	b := bx
 	m := make([]map[string]interface{}, 0)
 	json.Unmarshal(bx, &m)
 
-	b, _ := json.Marshal(m)
-	xs := string(b)
-
+	if len(m) > 0 {
+		b, _ = json.Marshal(m)
+	}
 	return b
 }
 
@@ -63,12 +64,11 @@ func (h *HTTP) parsePageCommand(b []byte, cmd string) ([]byte, []error) {
 				errArry = append(errArry, err)
 				continue
 			}
+
 			bx = h.parseJsonIntoSingleLine(bx)
-
 			phrase := fmt.Sprintf("%s:%s%s", string(leftSearchLeafe), relPath, delm)
-
-			b = bytes.ReplaceAll(b, []byte(phrase), bx)
-
+			phraseByte := []byte(phrase)
+			b = bytes.ReplaceAll(b, phraseByte, bx)
 		}
 	} else if cmd == "$RenderJSONToHTMLControl" {
 
@@ -196,15 +196,19 @@ func (h *HTTP) parsePageCommand(b []byte, cmd string) ([]byte, []error) {
 //   </div>
 func (h *HTTP) ProcessPageCommands(b []byte) ([]byte, []error) {
 
-	var err []error
+	var allErrors []error
 	var cmdArry = []string{
 		PageCmdLoadFile,
 		"$RenderJSONToHTMLControl",
 	}
 
 	for i := 0; i < len(cmdArry); i++ {
+		var err []error
 		b, err = h.parsePageCommand(b, cmdArry[i])
+		for j := 0; j < len(err); j++ {
+			allErrors = append(allErrors, err[j])
+		}
 	}
 
-	return b, err
+	return b, allErrors
 }
