@@ -24,6 +24,11 @@ type HTTP struct {
 
 	DecryptFile         func(filePath string, keyPhrase string)
 	EncryptionKeyPhrase string
+
+	// SecurityToken is passed via querystring to restrict
+	// asset (static) file. If not blank every call must have
+	// ?key=<secrity token> in order to access the file.
+	SecurityToken string
 }
 
 // UserSession defines a web user session.

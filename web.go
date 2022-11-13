@@ -214,6 +214,21 @@ func (h *HTTP) ServeStaticFile(w http.ResponseWriter, r *http.Request) {
 	// 		return
 	// 	}
 	// }
+	// You can also use the SecurityToken to pass a key via query-string.
+	// This can be done explicitly or implicityly by replacing placeholder as the
+	// the following example:
+	//    {{.StaticFileSecurityToken}} is the h.SecurityToken
+	//    Note that SecurityToken can be set on init; or at any time
+	//    while the webserver is running (i.e. change the code every x minutes)
+	// <link href="../web/assets/dist/css/bootstrap.min.css?key={{.StaticFileSecurityToken}}" rel="stylesheet">
+
+	if h.SecurityToken != "" {
+		key := r.URL.Query().Get("key")
+		if h.SecurityToken != key {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
 
 	ext := getFileExtension(uriPath)
 
