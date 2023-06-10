@@ -58,8 +58,8 @@ func (h *HTTP) parsePageCommand(b []byte, cmd string) ([]byte, []error) {
 			}
 			relPath := v[1]
 			pysPath := fmt.Sprintf("%s/%s", h.RootPhysicalPath, relPath)
+			pysPath = strings.ReplaceAll(pysPath, "//", "/")
 			bx, err := ReadFile(pysPath)
-
 			if err != nil {
 				errArry = append(errArry, err)
 				continue
@@ -76,6 +76,7 @@ func (h *HTTP) parsePageCommand(b []byte, cmd string) ([]byte, []error) {
 			}
 
 			bx = h.parseJsonIntoSingleLine(bx)
+
 			phrase := fmt.Sprintf("%s:%s%s", string(leftSearchLeafe), relPath, delm)
 			phraseByte := []byte(phrase)
 			b = bytes.ReplaceAll(b, phraseByte, bx)
@@ -201,9 +202,10 @@ func (h *HTTP) parsePageCommand(b []byte, cmd string) ([]byte, []error) {
 // their results. In the following example the content of
 // the file /web/html/index.html will be placed inside the
 // div tag
-//   <div style="border:none">
-//     {{.$LoadFile:/web/html/index.html}}
-//   </div>
+//
+//	<div style="border:none">
+//	  {{.$LoadFile:/web/html/index.html}}
+//	</div>
 func (h *HTTP) ProcessPageCommands(b []byte) ([]byte, []error) {
 
 	var allErrors []error
@@ -217,6 +219,15 @@ func (h *HTTP) ProcessPageCommands(b []byte) ([]byte, []error) {
 		b, err = h.parsePageCommand(b, cmdArry[i])
 		for j := 0; j < len(err); j++ {
 			allErrors = append(allErrors, err[j])
+		}
+	}
+
+	// load more files if the target file is loading other files.
+	for {
+		if bytes.Contains(b, []byte("{{."+PageCmdLoadFile)) {
+			b, _ = h.ProcessPageCommands(b)
+		} else {
+			break
 		}
 	}
 

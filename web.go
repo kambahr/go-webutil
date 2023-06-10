@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime"
 	"net/http"
@@ -26,9 +27,9 @@ func NewHTTP(rootPhysicalPath string, cacheDuration time.Duration) *HTTP {
 // setContentTypeAndWrite writes the response and reutrns false, if mime type not found;
 // returns true if mime type found.
 // The returns are for info -- as in any case the mime type is written:
-//    1. Mime type not found, let the browser handle it.
-//    2. Mime type found but not chaced, write from the file.
-//    3. Mime type found and cached, write from the cache.
+//  1. Mime type not found, let the browser handle it.
+//  2. Mime type found but not chaced, write from the file.
+//  3. Mime type found and cached, write from the cache.
 func (h *HTTP) setContentTypeAndWrite(w http.ResponseWriter, r *http.Request) (bool, bool, bool) {
 
 	mimTypeFound := false
@@ -326,7 +327,7 @@ func HTTPExec(method HTTPMethod, urlx string, hd http.Header, data []byte, tMill
 	}
 
 	// read the response body to return.
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return result, err
 	}
