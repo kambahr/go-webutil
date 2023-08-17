@@ -222,6 +222,11 @@ func (h *HTTP) ProcessPageCommands(b []byte) ([]byte, []error) {
 		}
 	}
 
+	// prevent Infinite loop
+	if len(allErrors) > 0 {
+		return b, allErrors
+	}
+
 	// load more files if the target file is loading other files.
 	for {
 		if bytes.Contains(b, []byte("{{."+PageCmdLoadFile)) {
