@@ -228,9 +228,14 @@ func (h *HTTP) ProcessPageCommands(b []byte) ([]byte, []error) {
 	}
 
 	// load more files if the target file is loading other files.
+	lstBSz := 0
 	for {
 		if bytes.Contains(b, []byte("{{."+PageCmdLoadFile)) {
 			b, _ = h.ProcessPageCommands(b)
+			if lstBSz > 0 && len(b) == lstBSz {
+				break
+			}
+			lstBSz = len(b)
 		} else {
 			break
 		}
